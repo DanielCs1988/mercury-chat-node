@@ -5,7 +5,7 @@ import {Actions} from "../models/models";
 export class ChatController {
 
     constructor(private socket: Socket, private chatService: ChatService, private userId: string) {
-        chatService.userJoined('', socket.id);
+        chatService.userJoined(userId, socket.id);
     }
 
     registerHandlers() {

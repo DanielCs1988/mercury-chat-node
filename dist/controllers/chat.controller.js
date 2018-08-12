@@ -5,7 +5,7 @@ class ChatController {
         this.socket = socket;
         this.chatService = chatService;
         this.userId = userId;
-        chatService.userJoined('', socket.id);
+        chatService.userJoined(userId, socket.id);
     }
     registerHandlers() {
         // setup handlers here
