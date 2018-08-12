@@ -4,13 +4,14 @@ const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
 const chat_controller_1 = require("./controllers/chat.controller");
+const mongoose_1 = require("mongoose");
 const chat_service_1 = require("./services/chat.service");
 const authenticator_1 = require("./middleware/authenticator");
 const port = process.env.PORT || 8080;
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
-// connect(process.env.MONGODB_URI!, {useNewUrlParser: true});
+mongoose_1.connect(process.env.MONGODB_URI, { useNewUrlParser: true });
 const chatService = new chat_service_1.ChatService();
 const authenticator = new authenticator_1.Authenticator();
 const setupControllers = (err, socket, userId) => {

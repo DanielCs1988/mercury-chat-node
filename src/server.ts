@@ -11,7 +11,7 @@ const port = process.env.PORT || 8080;
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
-// connect(process.env.MONGODB_URI!, {useNewUrlParser: true});
+connect(process.env.MONGODB_URI!, {useNewUrlParser: true});
 
 const chatService = new ChatService();
 const authenticator = new Authenticator();

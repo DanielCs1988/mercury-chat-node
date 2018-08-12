@@ -6,12 +6,13 @@ import {Actions} from "../models/models";
 export class Authenticator {
 
      authenticate(socket: Socket, callback: authCallbackFn) {
-        socket.on(Actions.AUTHENTICATE, async (token: string) => {
+        socket.on(Actions.AUTHENTICATE, async (token: string, ack: Function) => {
             try {
                 const userId = await this.getAuthIdFromToken(token);
                 callback(null, socket, userId);
+                ack();
             } catch (err) {
-                // TODO: call ack
+                ack(err);
                 socket.disconnect();
                 callback(`Unauthorized: ${err}`);
             }

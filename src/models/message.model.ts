@@ -2,9 +2,9 @@ import {Document, model, Schema} from "mongoose";
 
 export interface MessageModel extends Document {
     content: string;
-    from: string;
+    from?: string;
     to: string;
-    createdAt: number;
+    createdAt?: number;
 }
 
 const MessageSchema = new Schema({
