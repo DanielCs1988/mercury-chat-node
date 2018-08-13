@@ -14,9 +14,9 @@ const io = socketIO(server);
 mongoose_1.connect(process.env.MONGODB_URI, { useNewUrlParser: true });
 const chatService = new chat_service_1.ChatService();
 const authenticator = new authenticator_1.Authenticator();
-const setupControllers = (err, socket, userId) => {
+const setupControllers = (err, socket, userId, token) => {
     if (!err) {
-        const controller = new chat_controller_1.ChatController(socket, chatService, userId);
+        const controller = new chat_controller_1.ChatController(socket, chatService, userId, token);
         controller.registerHandlers();
         console.log(`Client ${userId} connected.`);
     }

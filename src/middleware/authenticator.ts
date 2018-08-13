@@ -9,7 +9,7 @@ export class Authenticator {
         socket.on(Actions.AUTHENTICATE, async (token: string, ack: Function) => {
             try {
                 const userId = await this.getAuthIdFromToken(token);
-                callback(null, socket, userId);
+                callback(null, socket, userId, token);
                 ack();
             } catch (err) {
                 ack(err);
@@ -53,4 +53,4 @@ export class Authenticator {
     }
 }
 
-export type authCallbackFn = (err: string | null, socket?: Socket, userId?: string) => void;
+export type authCallbackFn = (err: string | null, socket?: Socket, userId?: string, token?: string) => void;

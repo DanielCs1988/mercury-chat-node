@@ -16,9 +16,9 @@ connect(process.env.MONGODB_URI!, {useNewUrlParser: true});
 const chatService = new ChatService();
 const authenticator = new Authenticator();
 
-const setupControllers = (err: string, socket: socketIO.Socket, userId: string) => {
+const setupControllers = (err: string, socket: socketIO.Socket, userId: string, token: string) => {
     if (!err) {
-        const controller = new ChatController(socket, chatService, userId);
+        const controller = new ChatController(socket, chatService, userId, token);
         controller.registerHandlers();
         console.log(`Client ${userId} connected.`);
     } else {
