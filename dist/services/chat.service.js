@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const friendship_validator_1 = require("./friendship-validator");
 class ChatService {
     constructor() {
         this.users = new Map();
@@ -16,6 +17,7 @@ class ChatService {
     }
     userLeft(userId) {
         this.users.delete(userId);
+        friendship_validator_1.clearFriendlist(userId);
     }
 }
 exports.ChatService = ChatService;

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = require("axios");
-const USER_API_URL = 'https://protected-island-21893.herokuapp.com/friendlist';
+const USER_API_URL = 'https://mercury-feed.herokuapp.com/friendlist';
 const friendlists = new Map();
 function validateFriendship(target, propertyKey, descriptor) {
     const original = descriptor.value;
@@ -33,17 +33,31 @@ function validateFriendship(target, propertyKey, descriptor) {
     return descriptor;
 }
 exports.validateFriendship = validateFriendship;
+function fetchFriendlist(token, currentUser) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const friendlist = yield axios_1.default.get(USER_API_URL, { headers: { 'Authorization': `Bearer ${token}` } });
+        friendlists.set(currentUser, new Set(friendlist.data));
+    });
+}
 function friendshipIsValid(target, currentUser, token) {
     return __awaiter(this, void 0, void 0, function* () {
         if (target === currentUser) {
             return true;
         }
         if (!friendlists.has(currentUser)) {
-            const friendlist = yield axios_1.default.get(USER_API_URL, { headers: { 'Authorization': `Bearer ${token}` } });
-            friendlists.set(currentUser, new Set(friendlist.data));
+            yield fetchFriendlist(token, currentUser);
         }
-        console.log('Friendlist:', friendlists.get(currentUser));
+        // Optimistic approach: updating the friendlist once if the target user is not found on it.
+        // It might have changed in the meantime.
+        // TODO: React real-time to when someone else removes this user's friendship.
+        if (!friendlists.get(currentUser).has(target)) {
+            yield fetchFriendlist(token, currentUser);
+        }
         return friendlists.get(currentUser).has(target);
     });
 }
+function clearFriendlist(userId) {
+    friendlists.delete(userId);
+}
+exports.clearFriendlist = clearFriendlist;
 //# sourceMappingURL=friendship-validator.js.map

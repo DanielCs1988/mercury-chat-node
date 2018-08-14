@@ -1,4 +1,5 @@
 import {User} from '../models/models';
+import {clearFriendlist} from "./friendship-validator";
 
 export class ChatService {
 
@@ -19,5 +20,6 @@ export class ChatService {
 
     userLeft(userId: string) {
         this.users.delete(userId);
+        clearFriendlist(userId);
     }
 }
