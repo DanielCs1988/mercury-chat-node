@@ -1,5 +1,4 @@
 export const enum Actions {
-    CONNECT = 'connection',
     DISCONNECT = 'disconnect',
     AUTHENTICATE = 'authenticate',
     NEW_PRIVATE_MESSAGE = 'private/send',

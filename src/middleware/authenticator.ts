@@ -2,22 +2,35 @@ import * as jwks from "jwks-rsa";
 import {verify} from "jsonwebtoken";
 import {Socket} from "socket.io";
 import {Actions} from "../models/models";
+import {Authenticator} from "../server/types";
+import {ChatService} from "../services/chat.service";
 
-export class Authenticator {
+export class AuthGuard implements Authenticator {
 
-     authenticate(socket: Socket, callback: authCallbackFn) {
-        socket.on(Actions.AUTHENTICATE, async (token: string, ack: Function) => {
-            try {
-                const userId = await this.getAuthIdFromToken(token);
-                callback(null, socket, userId, token);
-                ack();
-            } catch (err) {
-                ack(err);
-                socket.disconnect();
-                callback(`Unauthorized: ${err}`);
-            }
+    constructor(private chatService: ChatService) { }
+
+     authenticate(socket: Socket): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            socket.on(Actions.AUTHENTICATE, async (token: string, ack: Function) => {
+                try {
+                    const userId = await this.getAuthIdFromToken(token);
+                    ack();
+                    this.userJoined(socket, userId);
+                    resolve({ userId, token });
+                } catch (error) {
+                    ack(error);
+                    socket.disconnect();
+                    reject(error);
+                }
+            });
         });
     }
+
+    private userJoined = (socket: Socket, userId: string) => {
+        this.chatService.userJoined(userId, socket.id);
+        socket.server.emit(Actions.SEND_USERLIST, this.chatService.getUserlist());
+        console.log(`User ${userId} joined the server.`);
+    };
 
     private readonly jwksClient = jwks({
         jwksUri: process.env.JWKS_URI!
@@ -52,5 +65,3 @@ export class Authenticator {
         });
     }
 }
-
-export type authCallbackFn = (err: string | null, socket?: Socket, userId?: string, token?: string) => void;

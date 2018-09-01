@@ -1,4 +1,5 @@
 import axios from 'axios';
+import {SocketContext} from "../server/types";
 
 const USER_API_URL = 'https://mercury-feed.herokuapp.com/friendlist';
 const friendlists = new Map<string, Set<string>>();
@@ -7,15 +8,14 @@ export function validateFriendship(target: any, propertyKey: string, descriptor:
     const original = descriptor.value;
     descriptor.value = async function(...args: any[]) {
         try {
-            const target = typeof args[0] === 'string' ? args[0] : args[0].to;
-            // @ts-ignore
-            if (await friendshipIsValid(target, this.userId, this.token)) {
+            const socket: SocketContext = args[0];
+            const target = typeof args[1] === 'string' ? args[1] : args[1].to;
+            if (await friendshipIsValid(target, socket.credentials.userId, socket.credentials.token)) {
                 return original.apply(this, args);
             }
-            // @ts-ignore
-            this.socket.disconnect();
+            socket.disconnect();
         } catch (e) {
-            console.log('Error:', e);
+            console.log('Error when validating friendship:\n', e);
             throw e;
         }
     };

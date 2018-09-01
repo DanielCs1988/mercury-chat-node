@@ -1,38 +1,34 @@
-import {Socket} from "socket.io";
 import {ChatService} from "../services/chat.service";
 import {Actions} from "../models/models";
 import {MessageModel, Message} from "../models/message.model";
 import {validateFriendship} from "../services/friendship-validator";
+import {Controller, SocketContext} from "../server/types";
 
-export class ChatController {
+export class ChatController implements Controller {
 
-    constructor(
-        private socket: Socket,
-        private chatService: ChatService,
-        private userId: string,
-        private token: string
-    ) {
-        chatService.userJoined(userId, socket.id);
+    constructor(private chatService: ChatService) {
         this.onPrivateHistory = this.onPrivateHistory.bind(this);
         this.onPrivateMessage = this.onPrivateMessage.bind(this);
     }
 
-    registerHandlers() {
-        this.socket.server.emit(Actions.SEND_USERLIST, this.chatService.getUserlist());
-        this.socket.on(Actions.NEW_PRIVATE_MESSAGE, this.onPrivateMessage);
-        this.socket.on(Actions.GET_PRIVATE_HISTORY, this.onPrivateHistory);
-        this.socket.on(Actions.DISCONNECT, this.onDisconnect);
+    handlers() {
+        return {
+            [Actions.NEW_PRIVATE_MESSAGE]: this.onPrivateMessage,
+            [Actions.GET_PRIVATE_HISTORY]: this.onPrivateHistory,
+            [Actions.DISCONNECT]: this.onDisconnect
+        };
     }
 
     @validateFriendship
-    private async onPrivateMessage(message: MessageModel, ack: Function) {
-        const msg = new Message({ ...message, from: this.userId });
+    private async onPrivateMessage(socket: SocketContext, message: MessageModel, ack: Function) {
+        const userId = socket.credentials.userId;
+        const msg = new Message({ ...message, from: userId });
         try {
             const savedMsg = await msg.save();
             const targetId = this.chatService.getSocketId(savedMsg.to);
             ack(null, savedMsg);
             if (targetId) {
-                this.socket.to(targetId).emit(Actions.SEND_PRIVATE_MESSAGE, savedMsg);
+                socket.to(targetId).emit(Actions.SEND_PRIVATE_MESSAGE, savedMsg);
             }
         } catch (err) {
             ack(err);
@@ -40,13 +36,14 @@ export class ChatController {
     };
 
     @validateFriendship
-    private async onPrivateHistory (target: string, ack: Function) {
+    private async onPrivateHistory (socket: SocketContext, target: string, ack: Function) {
+        const userId = socket.credentials.userId;
         try {
             const messages = await Message.find({
                 $or: [{
-                    $and: [{ from: this.userId }, { to: target }]
+                    $and: [{ from: userId }, { to: target }]
                 }, {
-                    $and: [{ from: target }, { to: this.userId }]
+                    $and: [{ from: target }, { to: userId }]
                 }]
             });
             ack(null, messages);
@@ -55,9 +52,10 @@ export class ChatController {
         }
     };
 
-    private onDisconnect = () => {
-        this.chatService.userLeft(this.userId);
-        this.socket.server.emit(Actions.SEND_USERLIST, this.chatService.getUserlist());
-        console.log(`User ${this.userId} has left the server.`);
+    private onDisconnect = (socket: SocketContext) => {
+        const userId = socket.credentials.userId;
+        this.chatService.userLeft(userId);
+        socket.server.emit(Actions.SEND_USERLIST, this.chatService.getUserlist());
+        console.log(`User ${userId} has left the server.`);
     };
 }
