@@ -35,12 +35,12 @@ export class SocketServer {
     };
 
     private registerHandlers = (socket: SocketContext, credentials?: any) => {
+        if (credentials) {
+            socket.credentials = credentials;
+        }
         for (const controller of this.controllers) {
             const mapping = controller.handlers();
             for (const route in mapping) {
-                if (credentials) {
-                    socket.credentials = credentials;
-                }
                 socket.on(route, (...args: any[]) => {
                     mapping[route](socket, ...args);
                 });

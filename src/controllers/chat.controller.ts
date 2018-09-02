@@ -1,15 +1,12 @@
 import {ChatService} from "../services/chat.service";
 import {Actions} from "../models/models";
 import {MessageModel, Message} from "../models/message.model";
-import {validateFriendship} from "../services/friendship-validator";
 import {Controller, SocketContext} from "../server/types";
+import {FriendService} from "../services/friend.service";
 
 export class ChatController implements Controller {
 
-    constructor(private chatService: ChatService) {
-        this.onPrivateHistory = this.onPrivateHistory.bind(this);
-        this.onPrivateMessage = this.onPrivateMessage.bind(this);
-    }
+    constructor(private chatService: ChatService, private friendService: FriendService) { }
 
     handlers() {
         return {
@@ -19,11 +16,11 @@ export class ChatController implements Controller {
         };
     }
 
-    @validateFriendship
-    private async onPrivateMessage(socket: SocketContext, message: MessageModel, ack: Function) {
+    private onPrivateMessage = async (socket: SocketContext, message: MessageModel, ack: Function) => {
         const userId = socket.credentials.userId;
-        const msg = new Message({ ...message, from: userId });
         try {
+            await this.friendService.validateFriendship(message.to, userId, socket.credentials.token);
+            const msg = new Message({ ...message, from: userId });
             const savedMsg = await msg.save();
             const targetId = this.chatService.getSocketId(savedMsg.to);
             ack(null, savedMsg);
@@ -31,14 +28,15 @@ export class ChatController implements Controller {
                 socket.to(targetId).emit(Actions.SEND_PRIVATE_MESSAGE, savedMsg);
             }
         } catch (err) {
-            ack(err);
+            ack(err.message);
+            socket.disconnect();
         }
     };
 
-    @validateFriendship
-    private async onPrivateHistory (socket: SocketContext, target: string, ack: Function) {
+     private onPrivateHistory = async (socket: SocketContext, target: string, ack: Function) => {
         const userId = socket.credentials.userId;
         try {
+            await this.friendService.validateFriendship(target, userId, socket.credentials.token);
             const messages = await Message.find({
                 $or: [{
                     $and: [{ from: userId }, { to: target }]
@@ -47,8 +45,9 @@ export class ChatController implements Controller {
                 }]
             });
             ack(null, messages);
-        } catch (e) {
-            ack(e);
+        } catch (err) {
+            ack(err.message);
+            socket.disconnect();
         }
     };
 
